@@ -1,29 +1,32 @@
 package main
 
 import (
-	//"fmt"
+	"fmt"
+	"math/rand"
 	"os"
+	"os/signal"
+	"syscall"
+	"strings"
+	"time"
 
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/bwmarrin/discordgo"
-	/*
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/session"
-	*/
 )
 
+var botName = "GungaBot"
+var choices = [...]string{"ging", "gung", "gang"}
 func main() {
-	lambda.Start(Handler)
+	setupBot()
 }
 
-func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	token := os.Getenv("TOKEN")
+func setupBot() {
+	envVarName := strings.ToUpper(botName) + "_TOKEN"
+	token := strings.TrimSpace(os.Getenv(envVarName))
 
 	discord, err := discordgo.New("Bot " + token)
 	if err != nil {
-		return createResponse(403, "Error creating Discord session: " + err.Error(), err)
+		fmt.Println("Could not instantiate bot. Error: " + err.Error())
+		discord.Close()
+		os.Exit(1)
 	}
 
 	// Register the messageCreate func as a callback for MessageCreate events.
@@ -32,23 +35,21 @@ func Handler(request events.APIGatewayProxyRequest) (events.APIGatewayProxyRespo
 	// Open a websocket connection to Discord and begin listening.
 	err = discord.Open()
 	if err != nil {
-		return createResponse(403, "Error opening connection: " + err.Error(), err)
+		fmt.Println("Error opening connection: " + err.Error())
+		discord.Close()
+		os.Exit(1)
 	}
+
+	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println(botName + " is now running. Press CTRL-C to exit.")
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
 
 	// Cleanly close down the Discord session.
 	discord.Close()
-
-	return createResponse(200, "This is working lol", nil)
 }
 
-func createResponse(code int, body string, err error) (events.APIGatewayProxyResponse, error) {
-	return events.APIGatewayProxyResponse{
-		StatusCode: code,
-		Body: body,
-	}, err
-}
-
-// Using code from https://github.com/bwmarrin/discordgo/blob/master/examples/pingpong/main.go for testing
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Ignore all messages created by the bot itself
@@ -56,13 +57,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	// If the message is "ping" reply with "Pong!"
-	if m.Content == "ping" {
-		s.ChannelMessageSend(m.ChannelID, "Pong!")
-	}
 
-	// If the message is "pong" reply with "Ping!"
-	if m.Content == "pong" {
-		s.ChannelMessageSend(m.ChannelID, "Ping!")
+	if m.Content == "!gunga" {
+		rand.Seed(time.Now().Unix())
+
+		msg := ""
+		for i := 1; i < rand.Intn(50); i++ {
+			msg += choices[rand.Intn(len(choices))]
+		}
+		s.ChannelMessageSend(m.ChannelID, msg)
 	}
 }

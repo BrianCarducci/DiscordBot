@@ -8,18 +8,16 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/BrianCarducci/DiscordBot/services/gunga"
 	"github.com/bwmarrin/discordgo"
-	"github.com/briancarducci/DiscordBot/services/gunga"
 )
 
 var botName = "JeffBot"
 var invokeStr = "!jeff"
-var commands = map[string] map[string]interface{} {
-	"gunga": {
-		"nArgs": 0,
-		"func": gunga.Gunga,
-	},
+var commands = map[string]func([]string) (string, error) {
+	"gunga": gunga.Gunga,
 }
+
 var helpStr = help()
 
 func main() {
@@ -66,7 +64,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	tokens, err = tokenize(m.Content)
+	tokens, err := tokenize(m.Content)
 	if err != nil {
 		return
 	}
@@ -74,35 +72,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if tokens[0] == invokeStr {
 		commandStr := tokens[1]
 		command, ok := commands[commandStr]
-		if ok != nil {
-			s.ChannelMessageSend(m.ChannelID, "Error: " + commandStr " is not a valid command. " + helpStr)
-			return
-		}
-
-		nArgs, aErr, cFunc, cFuncErr := command["nArgs"], command["func"]
-		if aErr != nil {
-			fmt.Println("Error: Command " + commandStr + " doesn't have an 'nArgs' field.")
-			s.ChannelMessageSend(m.ChannelID, "Error. Check bot logs for details.")
-			return
-		}
-		if cFuncErr != nil {
-			fmt.Println("Error: Command " + commandStr + " doesn't have an 'func' field.")
-			s.ChannelMessageSend(m.ChannelID, "Error. Check bot logs for details.")
+		if ok == false {
+			s.ChannelMessageSend(m.ChannelID, "Error: " + commandStr + " is not a valid command.\n" + helpStr)
 			return
 		}
 
 		commandArgs := tokens[2:]
-		nArgsEqual := len(commandArgs) == nArgs
-		var ret string
-		if nArgsEqual && len(commandArgs) == 0 {
-			ret = commandFunc()
-		}
-		else if nArgsEqual && len(commandArgs) > 0 {
-			ret = commandFunc(commandArgs)
-		}
-		else {
-			fmt.Println("Error: " + commandStr + " takes " + nArgs + " and was called with " + len(commandArgs) + " args but something went wrong.\n")
-			s.ChannelMessageSend(m.ChannelID, "Error. Check bot logs for details.")
+		ret, err := command(commandArgs)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Error: " + commandStr + " failed with message\n" + err.Error())
 			return
 		}
 
@@ -110,17 +88,30 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func help() (string) {
-	tickmarks := func (s string) (string) {
+func help() string {
+	tickmarks := func(s string) string {
 		return "`" + s + "`"
 	}
 
-	helpStr := "Please enter " + tickmarks(invokeStr + "[command]") + " where `command` is either "
+	var helpStr string
 	validCommands := ""
-	for k := range commands[:len(commands)-1] {
-		validCommands += (tickmarks(k) + ", ")
+
+	keys := []string{}
+	for k := range commands {
+		keys = append(keys, k)
 	}
-	validCommands += ("or " + tickmarks(commands[len(commands)]))
+	if len(keys) == 0 {
+		return "No commands are available for " + botName + " yet."
+	}
+	if len(keys) == 1 {
+		return "Usage: " + tickmarks(invokeStr + " " + keys[0])
+	}
+
+	helpStr = "Usage: " + tickmarks(invokeStr+" [command]") + " where `command` is either "
+	for k := range keys[:len(keys) - 1] {
+		validCommands += (tickmarks(keys[k]) + ", ")
+	}
+	validCommands += ("or " + tickmarks(keys[len(keys)-1]))
 
 	helpStr += validCommands
 	return helpStr

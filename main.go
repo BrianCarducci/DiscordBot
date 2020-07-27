@@ -70,6 +70,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if tokens[0] == invokeStr {
+		if len(tokens) == 1 {
+			s.ChannelMessageSend(m.ChannelID, "Error: you must call a subcommand.\n" + helpStr)
+			return
+		}
+
 		commandStr := tokens[1]
 		command, ok := commands[commandStr]
 		if ok == false {

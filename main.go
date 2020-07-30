@@ -24,11 +24,34 @@ func main() {
 	setupBot()
 }
 
-func setupBot() {
-	envVarName := strings.ToUpper(botName) + "_TOKEN"
-	token := strings.TrimSpace(os.Getenv(envVarName))
+func getArgs(envNames string[]) (string[]) {
+	tokenVals := []string{}
+	for _, v := range(envNames) {
+		val := strings.TrimSpace(os.Getenv(v))
+		tokenVals.append(val)
+	}
+	return tokenVals
+}
 
-	discord, err := discordgo.New("Bot " + token)
+func setupBot() {
+	// Ideally make a map or something for a token's env variable name and value..
+	envNames = []string{"DISCORD_TOKEN", "GOOGLE_TOKEN"}
+	apiTokens = getArgs(envNames)
+	discordToken, gMapsToken = apiTokens
+
+	//Exit if one of the needed tokens aren't set
+	shouldExit := false
+	for i,v := range(apiTokens) {
+		if len(v) == 0 {
+			fmt.Println(envNames[i] + " environment variable is not set.")
+			shouldExit = true
+		}
+	}
+	if shouldExit {
+		os.Exit(1)
+	}
+
+	discord, err := discordgo.New("Bot " + discordToken)
 	if err != nil {
 		fmt.Println("Could not instantiate bot. Error: " + err.Error())
 		discord.Close()

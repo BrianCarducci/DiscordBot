@@ -16,15 +16,15 @@ type GeoLocator struct {
 
 // GeoCoordinatesResponse is a struct which maps to the google maps request for geocode
 type geoCoordinatesResponse struct {
-	results []struct{
-		geometry struct{
-			location struct{
-				lat float32 `json:"lat"`
-				lng float32 `json:"lng"`
+	Results []struct{
+		Geometry struct{
+			Location struct{
+				Lat float32 `json:"lat"`
+				Lng float32 `json:"lng"`
 			} `json:"location"`
 		} `json:"geometry"`
 	} `json:"results"`
-	status string `json:"status"`
+	Status string `json:"status"`
 }
 
 type Location struct {
@@ -50,15 +50,15 @@ func (wb* GeoLocator) GetGeoCoordinates(location string) (Location, error) {
 	var gcr geoCoordinatesResponse
 	json.NewDecoder(googleMapsBaseResponse.Body).Decode(&gcr)
 
-	if gcr.status != "OK" {
+	if gcr.Status != "OK" {
 		fmt.Printf("%+v\n",gcr)
 		//fmt.Println("status: " + gcr.status)
-		return Location{}, errors.New("Google maps error: " + gcr.status)
+		return Location{}, errors.New("Google maps error: " + gcr.Status)
 	}
 
 	loc := Location{
-		Latitude: gcr.results[0].geometry.location.lat,
-		Longitude: gcr.results[0].geometry.location.lng,
+		Latitude: gcr.Results[0].Geometry.Location.Lat,
+		Longitude: gcr.Results[0].Geometry.Location.Lng,
 	}
 
 	return loc, nil

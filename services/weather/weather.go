@@ -1,7 +1,6 @@
 package weather
 
 import (
-	"io/ioutil"
 	"fmt"
 	"encoding/json"
 	"net/url"
@@ -16,10 +15,16 @@ type GeoLocator struct {
 }
 
 // GeoCoordinatesResponse is a struct which maps to the google maps request for geocode
-type GeoCoordinatesResponse struct {
-	Latitude float32 `json:"latitude"`
-	Longitude float32 `json:"longitude"`
-	Status string `json:"status"`
+type geoCoordinatesResponse struct {
+	results []struct{
+		geometry struct{
+			location struct{
+				lat float32 `json:"lat"`
+				lng float32 `json:"lng"`
+			} `json:"location"`
+		} `json:"geometry"`
+	} `json:"results"`
+	status string `json:"status"`
 }
 
 type Location struct {
@@ -30,7 +35,7 @@ type Location struct {
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 
-func (wb* GeoLocator) GetGeoCoordinates(location string) (GeoCoordinatesResponse, error) {
+func (wb* GeoLocator) GetGeoCoordinates(location string) (Location, error) {
 	values := url.Values{}
 	values.Add("address", location)
 	values.Add("key", wb.Token)
@@ -38,29 +43,28 @@ func (wb* GeoLocator) GetGeoCoordinates(location string) (GeoCoordinatesResponse
 	googleMapsBaseResponse, err := httpClient.Get("https://maps.googleapis.com/maps/api/geocode/json?" + values.Encode())
 	if err != nil {
 		fmt.Println("err in get req")
-		return GeoCoordinatesResponse{}, err
+		return Location{}, err
 	}
 	defer googleMapsBaseResponse.Body.Close()
 
-	var geoCoordinatesResponseMap map[string]interface{}
-	json.NewDecoder(googleMapsBaseResponse.Body).Decode(&geoCoordinatesResponseMap)
+	var gcr geoCoordinatesResponse
+	json.NewDecoder(googleMapsBaseResponse.Body).Decode(&gcr)
 
-	if geoCoordinatesResponseMap["status"] != "OK" {
-		fmt.Println("not ok")
-		return GeoCoordinatesResponse{}, errors.New("Google maps error: " + geoCoordinatesResponseMap["status"].(string))
+	if gcr.status != "OK" {
+		fmt.Printf("%+v\n",gcr)
+		//fmt.Println("status: " + gcr.status)
+		return Location{}, errors.New("Google maps error: " + gcr.status)
 	}
 
-	geoCoordinatesResponse := GeoCoordinatesResponse{
-		Latitude: geoCoordinatesResponseMap["results"].([]interface{})[0]["geometry"]["location"]["lat"].(float32),
-		Longitude: geoCoordinatesResponseMap["results"][0]["geometry"]["location"]["lng"].(float32),
-
+	loc := Location{
+		Latitude: gcr.results[0].geometry.location.lat,
+		Longitude: gcr.results[0].geometry.location.lng,
 	}
 
-	return geoCoordinatesResponse, nil
+	return loc, nil
 }
 
 func (wb* GeoLocator) TestGet(location []string) (string, error) {
 	res, err := wb.GetGeoCoordinates(location[0])
-	fmt.Println("status: " + res.Status)
 	return fmt.Sprintf("%f,%f", res.Latitude, res.Longitude), err
 }

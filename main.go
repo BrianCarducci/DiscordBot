@@ -9,13 +9,18 @@ import (
 	"syscall"
 
 	"github.com/BrianCarducci/DiscordBot/services/gunga"
+	"github.com/BrianCarducci/DiscordBot/services/weather"
 	"github.com/bwmarrin/discordgo"
 )
 
 var botName = "JeffBot"
 var invokeStr = "!jeff"
+
+var geoLocator = weather.GeoLocator{}
+
 var commands = map[string]func([]string) (string, error) {
 	"gunga": gunga.Gunga,
+	"weather": geoLocator.TestGet,
 }
 
 var helpStr = help()
@@ -24,20 +29,21 @@ func main() {
 	setupBot()
 }
 
-func getArgs(envNames string[]) (string[]) {
+func getArgs(envNames []string) ([]string) {
 	tokenVals := []string{}
 	for _, v := range(envNames) {
 		val := strings.TrimSpace(os.Getenv(v))
-		tokenVals.append(val)
+		tokenVals = append(tokenVals, val)
 	}
 	return tokenVals
 }
 
 func setupBot() {
 	// Ideally make a map or something for a token's env variable name and value..
-	envNames = []string{"DISCORD_TOKEN", "GOOGLE_TOKEN"}
-	apiTokens = getArgs(envNames)
-	discordToken, gMapsToken = apiTokens
+	envNames := []string{"DISCORD_TOKEN", "GOOGLE_TOKEN"}
+	apiTokens := getArgs(envNames)
+	discordToken, gMapsToken := apiTokens[0], apiTokens[1]
+	geoLocator.Token = gMapsToken
 
 	//Exit if one of the needed tokens aren't set
 	shouldExit := false
@@ -93,6 +99,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if tokens[0] == invokeStr {
+		fmt.Println(invokeStr)
 		if len(tokens) == 1 {
 			s.ChannelMessageSend(m.ChannelID, "Error: you must call a subcommand.\n" + helpStr)
 			return

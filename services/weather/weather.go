@@ -7,6 +7,7 @@ import (
   "net/http"
   "net/url"
   "strings"
+  "strconv"
   "time"
 )
 
@@ -34,6 +35,7 @@ type weatherURLData struct {
     ForecastURL string `json:"forecastHourly"`
   } `json:"properties"`
   Status int `json:"status"`
+  Title string `json:"title"`
 }
 
 type forecastData struct {
@@ -127,7 +129,7 @@ func GetForecastURL(location Location) (string, error) {
 
   weatherDataStatus := weatherData.Status
   if weatherDataStatus != 0 {
-    return "", errors.New("Forecast URL request responded with status " + string(weatherDataStatus))
+    return "", errors.New("Forecast URL request responded with status " + strconv.Itoa(weatherDataStatus) + ". Error: " + weatherData.Title)
   }
 
   forecastURL := weatherData.Properties.ForecastURL

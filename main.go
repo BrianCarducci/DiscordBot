@@ -23,7 +23,7 @@ var geoLocator = weather.GeoLocator{}
 var commands = map[string]func([]string) (string, error) {
 	"gunga": gunga.Gunga,
 	"weather": geoLocator.GetWeather,
-	"odds": odds.PlayOdds
+	"odds": odds.PlayOdds,
 }
 
 var helpStr = help()

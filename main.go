@@ -10,6 +10,8 @@ import (
 
 	"github.com/BrianCarducci/DiscordBot/services/gunga"
 	"github.com/BrianCarducci/DiscordBot/services/weather"
+	"github.com/BrianCarducci/DiscordBot/services/odds"
+
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -21,6 +23,7 @@ var geoLocator = weather.GeoLocator{}
 var commands = map[string]func([]string) (string, error) {
 	"gunga": gunga.Gunga,
 	"weather": geoLocator.GetWeather,
+	"odds": odds.PlayOdds
 }
 
 var helpStr = help()

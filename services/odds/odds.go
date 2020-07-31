@@ -1,7 +1,6 @@
 package odds
 
 import (
-	"strings"
 	"math/rand"
 	"errors"
 	"strconv"
@@ -9,17 +8,20 @@ import (
 
 func PlayOdds(args []string) (string, error) {
 	usageError := errors.New("Usage: <\"dare\"> <range> <guess> \nNOTE: <\"dare\"> must be in quotes, <range> and <guess> must be integers")
+
 	if len(args) != 3 {
 		return "", usageError
 	}
 
-	ran, err := strconv.Atoi(args[1])
-	if err != nil {
+	ran, ranErr := strconv.Atoi(args[1])
+	guess, guessErr := strconv.Atoi(args[2])
+
+	if ranErr != nil || guessErr != nil {
 		return "", usageError
 	}
-	guess, err := strconv.Atoi(args[2])
-	if err != nil {
-		return "", usageError
+
+	if guess < 1 || guess > ran {
+		return "", errors.New("Range must be between 1 and " + args[1] + " you sly little dog")
 	}
 
 	rngResult := rand.Intn(ran) + 1

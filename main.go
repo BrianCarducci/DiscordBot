@@ -20,7 +20,7 @@ var geoLocator = weather.GeoLocator{}
 
 var commands = map[string]func([]string) (string, error) {
 	"gunga": gunga.Gunga,
-	"weather": geoLocator.TestGet,
+	"weather": geoLocator.GetWeather,
 }
 
 var helpStr = help()
@@ -99,7 +99,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if tokens[0] == invokeStr {
-		fmt.Println(invokeStr)
 		if len(tokens) == 1 {
 			s.ChannelMessageSend(m.ChannelID, "Error: you must call a subcommand.\n" + helpStr)
 			return

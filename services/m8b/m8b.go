@@ -9,6 +9,11 @@ import (
 var answers = []string{
 	"It is certain.",
 	"Not even close baaabyyy.",
+	"Naaaaah",
+	"idk bruh",
+	"Yuh",
+	"Probs",
+	"Not in a milly yearz"
 }
 
 func M8b(args []string) (*discordgo.MessageSend, error) {

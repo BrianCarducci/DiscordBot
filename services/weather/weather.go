@@ -8,7 +8,9 @@ import (
   "net/url"
   "strings"
   "strconv"
-  "time"
+	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 // GeoLocator holds token and has methods for weather operations
@@ -62,27 +64,30 @@ type Location struct {
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
 
-func (wb* GeoLocator) GetWeather(locationTokens []string) (string, error) {
+func (wb* GeoLocator) GetWeather(locationTokens []string) (*discordgo.MessageSend, error) {
+	msgsend := discordgo.MessageSend{}
+
   joinedLoc := strings.Join(locationTokens, " ")
   coords, err := wb.GetGeoCoordinates(joinedLoc)
   if err != nil {
-    return "", err
+    return &msgsend, err
   }
 
   forecastURL, err := GetForecastURL(coords)
   if err != nil {
-    return "", err
+    return &msgsend, err
   }
 
   forecastData, err := GetForecastData(forecastURL)
   if err != nil {
-    return "", err
+    return &msgsend, err
   }
 
   forecast := forecastData.Properties.Periods[0]
 
-  msg := fmt.Sprintf("**%s**:\nTemp: %d°%s\nWind speed: %s %s\nDescription: %s", coords.FormattedAddr, forecast.Temperature, forecast.TemperatureUnit, forecast.WindSpeed, forecast.WindDirection, forecast.ShortForecast)
-  return msg, nil
+	msg := fmt.Sprintf("**%s**:\nTemp: %d°%s\nWind speed: %s %s\nDescription: %s", coords.FormattedAddr, forecast.Temperature, forecast.TemperatureUnit, forecast.WindSpeed, forecast.WindDirection, forecast.ShortForecast)
+	msgsend.Content = msg
+  return &msgsend, nil
 }
 
 func (wb* GeoLocator) GetGeoCoordinates(location string) (Location, error) {

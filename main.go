@@ -20,7 +20,7 @@ var invokeStr = "!jeff"
 
 var geoLocator = weather.GeoLocator{}
 
-var commands = map[string]func([]string) (string, error) {
+var commands = map[string]func([]string) (*discordgo.MessageSend, error) {
 	"gunga": gunga.Gunga,
 	"weather": geoLocator.GetWeather,
 	"odds": odds.PlayOdds,
@@ -121,7 +121,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 
-		s.ChannelMessageSend(m.ChannelID, ret)
+		s.ChannelMessageSendComplex(m.ChannelID, ret)
 	}
 }
 

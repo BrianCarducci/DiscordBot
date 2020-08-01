@@ -13,7 +13,7 @@ var answers = []string{
 	"idk bruh",
 	"Yuh",
 	"Probs",
-	"Not in a milly yearz"
+	"Not in a milly yearz",
 }
 
 func M8b(args []string) (*discordgo.MessageSend, error) {

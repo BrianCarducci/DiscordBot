@@ -19,6 +19,7 @@ type GeoLocator struct {
 // GeoCoordinatesResponse is a struct which maps to the google maps request for geocode
 type geoCoordinatesResponse struct {
   Results []struct{
+		FormattedAddr string `json:"formatted_address"` 
     Geometry struct{
       Location struct{
         Lat float32 `json:"lat"`
@@ -55,6 +56,7 @@ type forecastData struct {
 type Location struct {
   Latitude  float32 `json:"latitude"`
   Longitude float32 `json:"longitude"`
+	FormattedAddr string
 }
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
@@ -79,7 +81,7 @@ func (wb* GeoLocator) GetWeather(locationTokens []string) (string, error) {
 
   forecast := forecastData.Properties.Periods[0]
 
-  msg := fmt.Sprintf("Temp: %d°%s\nWind speed: %s %s\nDescription: %s", forecast.Temperature, forecast.TemperatureUnit, forecast.WindSpeed, forecast.WindDirection, forecast.ShortForecast)
+  msg := fmt.Sprintf("**%s**:\nTemp: %d°%s\nWind speed: %s %s\nDescription: %s", coords.FormattedAddr, forecast.Temperature, forecast.TemperatureUnit, forecast.WindSpeed, forecast.WindDirection, forecast.ShortForecast)
   return msg, nil
 }
 
@@ -103,7 +105,8 @@ func (wb* GeoLocator) GetGeoCoordinates(location string) (Location, error) {
 
   loc := Location{
     Latitude: gcr.Results[0].Geometry.Location.Lat,
-    Longitude: gcr.Results[0].Geometry.Location.Lng,
+		Longitude: gcr.Results[0].Geometry.Location.Lng,
+		FormattedAddr: gcr.Results[0].FormattedAddr,
   }
 
   return loc, nil

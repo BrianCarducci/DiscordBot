@@ -85,9 +85,16 @@ func (wb* GeoLocator) GetWeather(locationTokens []string) (*discordgo.MessageSen
 	
 	forecast := forecastData.Properties.Periods[0]
 
-	msgsend.Embed = &discordgo.MessageEmbed {
-		Image: &discordgo.MessageEmbedImage {
-			URL: forecast.IconURL,
+	imgRes, err := httpClient.Get(forecast.IconURL)
+  if err != nil {
+    return &msgsend, err
+	}
+
+	msgsend.Files = []*discordgo.File{
+		&discordgo.File {
+			Name: "weather_icon.png",
+			ContentType: "image/png",
+			Reader: imgRes.Body,
 		},
 	}
 

@@ -81,9 +81,15 @@ func (wb* GeoLocator) GetWeather(locationTokens []string) (*discordgo.MessageSen
   forecastData, err := GetForecastData(forecastURL)
   if err != nil {
     return &msgsend, err
-  }
+	}
+	
+	forecast := forecastData.Properties.Periods[0]
 
-  forecast := forecastData.Properties.Periods[0]
+	msgsend.Embed = &discordgo.MessageEmbed {
+		Image: &discordgo.MessageEmbedImage {
+			URL: forecast.IconURL,
+		},
+	}
 
 	msg := fmt.Sprintf("**%s**:\nTemp: %d°%s\nWind speed: %s %s\nDescription: %s", coords.FormattedAddr, forecast.Temperature, forecast.TemperatureUnit, forecast.WindSpeed, forecast.WindDirection, forecast.ShortForecast)
 	msgsend.Content = msg

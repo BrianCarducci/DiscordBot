@@ -152,7 +152,7 @@ func GetForecastData(forecastURL string) (forecastData, error) {
 
   forecastDataStatus := forecast.Status
   if forecastDataStatus != 0 {
-    return forecastData{}, errors.New("Forecast data request responded with status " + string(forecastDataStatus))
+    return forecastData{}, errors.New("Forecast data request responded with status " + strconv.Itoa(forecastDataStatus))
   }
 
   return forecast, nil

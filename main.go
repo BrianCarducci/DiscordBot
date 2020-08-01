@@ -11,6 +11,8 @@ import (
 	"github.com/BrianCarducci/DiscordBot/services/gunga"
 	"github.com/BrianCarducci/DiscordBot/services/weather"
 	"github.com/BrianCarducci/DiscordBot/services/odds"
+	"github.com/BrianCarducci/DiscordBot/services/m8b"
+
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -24,6 +26,7 @@ var commands = map[string]func([]string) (*discordgo.MessageSend, error) {
 	"gunga": gunga.Gunga,
 	"weather": geoLocator.GetWeather,
 	"odds": odds.PlayOdds,
+	"m8b": m8b.M8b,
 }
 
 var helpStr = help()

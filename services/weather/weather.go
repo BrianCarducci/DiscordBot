@@ -18,7 +18,6 @@ type GeoLocator struct {
   Token string
 }
 
-// GeoCoordinatesResponse is a struct which maps to the google maps request for geocode
 type geoCoordinatesResponse struct {
   Results []struct{
 		FormattedAddr string `json:"formatted_address"` 
@@ -32,7 +31,6 @@ type geoCoordinatesResponse struct {
   Status string `json:"status"`
 }
 
-// weatherURLData is a struct which maps to the weather.gov request for weather URL based on coordinates
 type weatherURLData struct {
   Properties struct{
     ForecastURL string `json:"forecastHourly"`
@@ -55,7 +53,7 @@ type forecastData struct {
   Status int `json:"status"`
 }
 
-type Location struct {
+type location struct {
   Latitude  float32 `json:"latitude"`
   Longitude float32 `json:"longitude"`
 	FormattedAddr string
@@ -63,22 +61,21 @@ type Location struct {
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
-
 func (wb* GeoLocator) GetWeather(locationTokens []string) (*discordgo.MessageSend, error) {
 	msgsend := discordgo.MessageSend{}
 
   joinedLoc := strings.Join(locationTokens, " ")
-  coords, err := wb.GetGeoCoordinates(joinedLoc)
+  coords, err := wb.getGeoCoordinates(joinedLoc)
   if err != nil {
     return &msgsend, err
   }
 
-  forecastURL, err := GetForecastURL(coords)
+  forecastURL, err := getForecastURL(coords)
   if err != nil {
     return &msgsend, err
   }
 
-  forecastData, err := GetForecastData(forecastURL)
+  forecastData, err := getForecastData(forecastURL)
   if err != nil {
     return &msgsend, err
 	}
@@ -103,14 +100,14 @@ func (wb* GeoLocator) GetWeather(locationTokens []string) (*discordgo.MessageSen
   return &msgsend, nil
 }
 
-func (wb* GeoLocator) GetGeoCoordinates(location string) (Location, error) {
+func (wb* GeoLocator) getGeoCoordinates(locStr string) (location, error) {
   values := url.Values{}
-  values.Add("address", location)
+  values.Add("address", locStr)
   values.Add("key", wb.Token)
 
   googleMapsBaseResponse, err := httpClient.Get("https://maps.googleapis.com/maps/api/geocode/json?" + values.Encode())
   if err != nil {
-    return Location{}, err
+    return location{}, err
   }
   defer googleMapsBaseResponse.Body.Close()
 
@@ -118,10 +115,10 @@ func (wb* GeoLocator) GetGeoCoordinates(location string) (Location, error) {
   json.NewDecoder(googleMapsBaseResponse.Body).Decode(&gcr)
 
   if gcr.Status != "OK" {
-    return Location{}, errors.New("Google maps error: " + gcr.Status)
+    return location{}, errors.New("Google maps error: " + gcr.Status)
   }
 
-  loc := Location{
+  loc := location{
     Latitude: gcr.Results[0].Geometry.Location.Lat,
 		Longitude: gcr.Results[0].Geometry.Location.Lng,
 		FormattedAddr: gcr.Results[0].FormattedAddr,
@@ -130,15 +127,8 @@ func (wb* GeoLocator) GetGeoCoordinates(location string) (Location, error) {
   return loc, nil
 }
 
-/*
-func (wb* GeoLocator) TestGet(location []string) (string, error) {
-  res, err := wb.GetGeoCoordinates(location[0])
-  return fmt.Sprintf("%f,%f", res.Latitude, res.Longitude), err
-}
-*/
-
-func GetForecastURL(location Location) (string, error) {
-  locStr := fmt.Sprintf("%f,%f", location.Latitude, location.Longitude)
+func getForecastURL(loc location) (string, error) {
+  locStr := fmt.Sprintf("%f,%f", loc.Latitude, loc.Longitude)
   weatherResp, err := httpClient.Get("https://api.weather.gov/points/" + locStr)
   if err != nil {
     return "", err
@@ -161,7 +151,7 @@ func GetForecastURL(location Location) (string, error) {
   return forecastURL, nil
 }
 
-func GetForecastData(forecastURL string) (forecastData, error) {
+func getForecastData(forecastURL string) (forecastData, error) {
   forecastResp, err := httpClient.Get(forecastURL)
   if err != nil {
     return forecastData{}, err

@@ -61,6 +61,13 @@ type location struct {
 
 var httpClient = &http.Client{Timeout: 10 * time.Second}
 
+/*
+GetWeather does the following:
+	1.) searches for the provided string of tokens,
+	2.) translates them to geocoordinates,
+	3.) sends them to the weather.gov API, and then
+	4.) returns a discordgo.MessageSend struct of the necessary weather information
+*/
 func (wb* GeoLocator) GetWeather(locationTokens []string) (*discordgo.MessageSend, error) {
 	msgsend := discordgo.MessageSend{}
 

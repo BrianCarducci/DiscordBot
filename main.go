@@ -1,35 +1,17 @@
 package main
 
 import (
-	"encoding/csv"
 	"fmt"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 
-	"github.com/BrianCarducci/DiscordBot/services/gunga"
-	"github.com/BrianCarducci/DiscordBot/services/weather"
-	"github.com/BrianCarducci/DiscordBot/services/odds"
-	"github.com/BrianCarducci/DiscordBot/services/m8b"
-
+	"github.com/BrianCarducci/DiscordBot/bot_error"
+	"github.com/BrianCarducci/DiscordBot/utils"
 
 	"github.com/bwmarrin/discordgo"
 )
-
-var botName = "JeffBot"
-var invokeStr = "!jeff"
-
-var geoLocator = weather.GeoLocator{}
-
-var commands = map[string]func([]string) (*discordgo.MessageSend, error) {
-	"gunga": gunga.Gunga,
-	"weather": geoLocator.GetWeather,
-	"odds": odds.PlayOdds,
-	"m8b": m8b.M8b,
-}
-
-var helpStr = help()
 
 func main() {
 	setupBot()
@@ -49,7 +31,7 @@ func setupBot() {
 	envNames := []string{"DISCORD_TOKEN", "GOOGLE_TOKEN"}
 	apiTokens := getArgs(envNames)
 	discordToken, gMapsToken := apiTokens[0], apiTokens[1]
-	geoLocator.Token = gMapsToken
+	utils.GeoLocator.Token = gMapsToken
 
 	//Exit if one of the needed tokens aren't set
 	shouldExit := false
@@ -82,7 +64,7 @@ func setupBot() {
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println(botName + " is now running. Press CTRL-C to exit.")
+	fmt.Println(utils.BotName + " is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc
@@ -99,72 +81,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	tokens, err := tokenize(m.Content)
-	if err != nil {
+	err := utils.RunCommand(s, m)
+	if _, ok := err.(*bot_error.BotError); ok {
+		// Might want to check if the code is 0. Hopefully, casting doesn't make a new BotError with code 0..
+		return
+	} else if err != nil {
+		s.ChannelMessageSend(m.ChannelID, err.Error())
 		return
 	}
-
-	if tokens[0] == invokeStr {
-		if len(tokens) == 1 {
-			s.ChannelMessageSend(m.ChannelID, "Error: you must call a subcommand.\n" + helpStr)
-			return
-		}
-
-		commandStr := tokens[1]
-		command, ok := commands[commandStr]
-		if ok == false {
-			s.ChannelMessageSend(m.ChannelID, "Error: " + commandStr + " is not a valid command.\n" + helpStr)
-			return
-		}
-
-		commandArgs := tokens[2:]
-		ret, err := command(commandArgs)
-		if err != nil {
-			s.ChannelMessageSend(m.ChannelID, "Error: " + commandStr + " failed with message\n" + err.Error())
-			return
-		}
-
-		s.ChannelMessageSendComplex(m.ChannelID, ret)
-	}
-}
-
-func help() string {
-	tickmarks := func(s string) string {
-		return "`" + s + "`"
-	}
-
-	var helpStr string
-	validCommands := ""
-
-	keys := []string{}
-	for k := range commands {
-		keys = append(keys, k)
-	}
-	if len(keys) == 0 {
-		return "No commands are available for " + botName + " yet."
-	}
-	if len(keys) == 1 {
-		return "Usage: " + tickmarks(invokeStr + " " + keys[0])
-	}
-
-	helpStr = "Usage: " + tickmarks(invokeStr+" [command]") + " where `command` is either "
-	for k := range keys[:len(keys) - 1] {
-		validCommands += (tickmarks(keys[k]) + ", ")
-	}
-	validCommands += ("or " + tickmarks(keys[len(keys)-1]))
-
-	helpStr += validCommands
-	return helpStr
-}
-
-func tokenize(msg string) ([]string, error) {
-	r := csv.NewReader(strings.NewReader(msg))
-	r.Comma = ' '
-
-	fields, err := r.Read()
-	if err != nil {
-		return []string{}, err
-	}
-
-	return fields, nil
 }

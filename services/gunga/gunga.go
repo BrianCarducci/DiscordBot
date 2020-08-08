@@ -8,7 +8,7 @@ import (
 )
 
 var choices = [...]string{"ging", "gung", "gang"}
-func Gunga(tokens []string) (*discordgo.MessageSend, error) {
+func Gunga(s *discordgo.Session, m *discordgo.MessageCreate, tokens []string) (error) {
 	rand.Seed(time.Now().Unix())
 
 	msg := ""
@@ -19,5 +19,7 @@ func Gunga(tokens []string) (*discordgo.MessageSend, error) {
 	msgsend := &discordgo.MessageSend{
 		Content: msg,
 	}
-	return msgsend, nil
+
+	s.ChannelMessageSendComplex(m.ChannelID, msgsend)
+	return nil
 }

@@ -16,11 +16,12 @@ var answers = []string{
 	"Not in a milly yearz",
 }
 
-func M8b(args []string) (*discordgo.MessageSend, error) {
+func M8b(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (error) {
 	question := strings.Join(args, " ")
 	answer := answers[rand.Intn(len(answers))]
 	msgsend := &discordgo.MessageSend{
 		Content: "Question: " + question + "\nAnswer: " + answer,
 	}
-	return msgsend, nil
+	s.ChannelMessageSendComplex(m.ChannelID, msgsend)
+	return nil
 }

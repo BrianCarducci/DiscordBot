@@ -70,30 +70,30 @@ GetWeather does the following:
 	3.) sends them to the weather.gov API, and then
 	4.) returns a discordgo.MessageSend struct of the necessary weather information
 */
-func (wb* GeoLocator) GetWeather(locationTokens []string) (*discordgo.MessageSend, error) {
+func (wb* GeoLocator) GetWeather(s *discordgo.Session, m *discordgo.MessageCreate, locationTokens []string) (error) {
 	msgsend := discordgo.MessageSend{}
 
   joinedLoc := strings.Join(locationTokens, " ")
   coords, err := wb.getGeoCoordinates(joinedLoc)
   if err != nil {
-    return &msgsend, err
+    return err
   }
 
   forecastURL, err := getForecastURL(coords)
   if err != nil {
-    return &msgsend, err
+    return err
   }
 
   forecastData, err := getForecastData(forecastURL)
   if err != nil {
-    return &msgsend, err
+    return err
 	}
 	
 	forecast := forecastData.Properties.Periods[0]
 
 	imgRes, err := httpClient.Get(forecast.IconURL)
   if err != nil {
-    return &msgsend, err
+    return err
 	}
 
 	msgsend.Files = []*discordgo.File{
@@ -106,7 +106,8 @@ func (wb* GeoLocator) GetWeather(locationTokens []string) (*discordgo.MessageSen
 
 	msg := fmt.Sprintf("**%s**:\nTemp: %d°%s\nWind speed: %s %s\nDescription: %s", coords.FormattedAddr, forecast.Temperature, forecast.TemperatureUnit, forecast.WindSpeed, forecast.WindDirection, forecast.ShortForecast)
 	msgsend.Content = msg
-  return &msgsend, nil
+	s.ChannelMessageSendComplex(m.ChannelID, &msgsend)
+  return nil
 }
 
 func (wb* GeoLocator) getGeoCoordinates(locStr string) (location, error) {
@@ -124,7 +125,7 @@ func (wb* GeoLocator) getGeoCoordinates(locStr string) (location, error) {
   json.NewDecoder(googleMapsBaseResponse.Body).Decode(&gcr)
 
   if gcr.Status != "OK" {
-    return location{}, errors.New("Google maps error: " + gcr.Status)
+    return location{}, errors.New("ERROR: Google maps returned code " + gcr.Status)
   }
 
   loc := location{
@@ -149,12 +150,12 @@ func getForecastURL(loc location) (string, error) {
 
   weatherDataStatus := weatherData.Status
   if weatherDataStatus != 0 {
-    return "", errors.New("Forecast URL request responded with status " + strconv.Itoa(weatherDataStatus) + ". Error: " + weatherData.Title)
+    return "", errors.New("ERROR: Forecast URL request responded with status " + strconv.Itoa(weatherDataStatus) + ". Message: " + weatherData.Title)
   }
 
   forecastURL := weatherData.Properties.ForecastURL
   if forecastURL == "" {
-    return forecastURL, errors.New("Forecast URL was not mapped properly")
+    return forecastURL, errors.New("ERROR: Forecast URL was not mapped properly")
   }
 
   return forecastURL, nil
@@ -172,7 +173,7 @@ func getForecastData(forecastURL string) (forecastData, error) {
 
   forecastDataStatus := forecast.Status
   if forecastDataStatus != 0 {
-    return forecastData{}, errors.New("Forecast data request responded with status " + strconv.Itoa(forecastDataStatus) + ": " + forecast.ErrTitle + " - " + forecast.ErrDetail)
+    return forecastData{}, errors.New("ERROR: Forecast data request responded with status " + strconv.Itoa(forecastDataStatus) + ": " + forecast.ErrTitle + " - " + forecast.ErrDetail)
   }
 
   return forecast, nil

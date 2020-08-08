@@ -12,21 +12,20 @@ import (
 )
 
 var workingDir, _ = os.Getwd()
-var soundsDir = filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(workingDir))), "assets", "sounds")
+var soundsDir = filepath.Join(workingDir, "assets", "sounds")
 var sounds = map[string]string{
 	"name": filepath.Join(soundsDir, "name_jeff.mp3"),
 }
 var helpString = help()
 
 func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (error) {
-	fmt.Println(soundsDir)
 	if len(args) == 0 {
 		return errors.New(helpString)
 	}
 
-	msgsend := discordgo.MessageSend{Content: "play invoked",}
+	//msgsend := discordgo.MessageSend{Content: "play invoked",}
 
-	s.ChannelMessageSendComplex(m.ChannelID, &msgsend)
+	//s.ChannelMessageSendComplex(m.ChannelID, &msgsend)
 	return nil
 }
 
@@ -44,10 +43,10 @@ func help() string {
 	}
 	
 	if len(keys) == 1 {
-		return "Usage: " + tickmarks(constants.InvokeStr + "play " + keys[0])
+		return "Usage: " + tickmarks(constants.InvokeStr + " play " + keys[0])
 	}
 
-	helpStr = "Usage: " + tickmarks(constants.InvokeStr+" play [sound]") + " where `sound` is either "
+	helpStr = "Usage: " + tickmarks(constants.InvokeStr + " play " + "[sound]") + " where `[sound]` is either "
 	for k := range keys[:len(keys) - 1] {
 		validCommands += (tickmarks(keys[k]) + ", ")
 	}

@@ -51,6 +51,8 @@ type forecastData struct {
     } `json:"periods"`
   }   `json:"properties"`
   Status int `json:"status"`
+  ErrTitle string `json:"title"`
+  ErrDetail string `json:"detail"`
 }
 
 type location struct {
@@ -170,7 +172,7 @@ func getForecastData(forecastURL string) (forecastData, error) {
 
   forecastDataStatus := forecast.Status
   if forecastDataStatus != 0 {
-    return forecastData{}, errors.New("Forecast data request responded with status " + strconv.Itoa(forecastDataStatus))
+    return forecastData{}, errors.New("Forecast data request responded with status " + strconv.Itoa(forecastDataStatus) + ": " + forecast.ErrTitle + " - " + forecast.ErrDetail)
   }
 
   return forecast, nil

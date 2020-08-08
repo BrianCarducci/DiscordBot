@@ -71,6 +71,9 @@ GetWeather does the following:
 	4.) returns a discordgo.MessageSend struct of the necessary weather information
 */
 func (wb* GeoLocator) GetWeather(s *discordgo.Session, m *discordgo.MessageCreate, locationTokens []string) (error) {
+	if len(locationTokens) == 0 {
+		return errors.New("Provide a location, yo")
+	}
 	msgsend := discordgo.MessageSend{}
 
   joinedLoc := strings.Join(locationTokens, " ")

@@ -8,6 +8,10 @@ import (
 	"syscall"
 
 	"github.com/BrianCarducci/DiscordBot/bot_error"
+	"github.com/BrianCarducci/DiscordBot/constants"
+	"github.com/BrianCarducci/DiscordBot/constants/commands"
+
+
 	"github.com/BrianCarducci/DiscordBot/utils"
 
 	"github.com/bwmarrin/discordgo"
@@ -31,7 +35,7 @@ func setupBot() {
 	envNames := []string{"DISCORD_TOKEN", "GOOGLE_TOKEN"}
 	apiTokens := getArgs(envNames)
 	discordToken, gMapsToken := apiTokens[0], apiTokens[1]
-	utils.GeoLocator.Token = gMapsToken
+	commands.GeoLocator.Token = gMapsToken
 
 	//Exit if one of the needed tokens aren't set
 	shouldExit := false
@@ -64,7 +68,7 @@ func setupBot() {
 	}
 
 	// Wait here until CTRL-C or other term signal is received.
-	fmt.Println(utils.BotName + " is now running. Press CTRL-C to exit.")
+	fmt.Println(constants.BotName + " is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc

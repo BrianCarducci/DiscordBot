@@ -6,25 +6,11 @@ import (
 	"strings"
 
 	"github.com/BrianCarducci/DiscordBot/bot_error"
-	"github.com/BrianCarducci/DiscordBot/services/gunga"
-	"github.com/BrianCarducci/DiscordBot/services/weather"
-	"github.com/BrianCarducci/DiscordBot/services/odds"
-	"github.com/BrianCarducci/DiscordBot/services/m8b"
+	"github.com/BrianCarducci/DiscordBot/constants"
+	"github.com/BrianCarducci/DiscordBot/constants/commands"
 
 	"github.com/bwmarrin/discordgo"
 )
-
-const BotName = "JeffBot"
-const InvokeStr = "!jeff"
-
-var GeoLocator = weather.GeoLocator{}
-
-var commands = map[string]func(*discordgo.Session, *discordgo.MessageCreate, []string) (error) {
-	"gunga": gunga.Gunga,
-	"weather": GeoLocator.GetWeather,
-	"odds": odds.PlayOdds,
-	"m8b": m8b.M8b,
-}
 
 var helpStr = help()
 
@@ -37,17 +23,17 @@ func help() string {
 	validCommands := ""
 
 	keys := []string{}
-	for k := range commands {
+	for k := range commands.Commands {
 		keys = append(keys, k)
 	}
 	if len(keys) == 0 {
-		return "No commands are available for " + BotName + " yet."
+		return "No commands are available for " + constants.BotName + " yet."
 	}
 	if len(keys) == 1 {
-		return "Usage: " + tickmarks(InvokeStr + " " + keys[0])
+		return "Usage: " + tickmarks(constants.InvokeStr + " " + keys[0])
 	}
 
-	helpStr = "Usage: " + tickmarks(InvokeStr+" [command]") + " where `command` is either "
+	helpStr = "Usage: " + tickmarks(constants.InvokeStr+" [command]") + " where `command` is either "
 	for k := range keys[:len(keys) - 1] {
 		validCommands += (tickmarks(keys[k]) + ", ")
 	}
@@ -66,7 +52,7 @@ func tokenize(msg string) ([]string, error) {
 		return []string{}, err
 	}
 
-	if tokens[0] != InvokeStr {
+	if tokens[0] != constants.InvokeStr {
 		return []string{}, &bot_error.BotError{Message: "", Code: 0}
 	}
 
@@ -84,7 +70,7 @@ func RunCommand(s *discordgo.Session, msg *discordgo.MessageCreate) (error) {
 	}
 
 	commandStr := tokens[0]
-	command, ok := commands[commandStr]
+	command, ok := commands.Commands[commandStr]
 	if !ok {
 		return errors.New("ERROR: " + commandStr + " is not a valid command.\n" + helpStr)
 	}

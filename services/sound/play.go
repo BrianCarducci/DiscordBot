@@ -41,7 +41,6 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 		if err != nil {
 			return err
 		}
-		fmt.Println("PLAYING " + reqSound)
 
 		curSound = reqSound
 	}
@@ -51,9 +50,6 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 		return err
 	}
 
-	//msgsend := discordgo.MessageSend{Content: "play invoked",}
-
-	//s.ChannelMessageSendComplex(m.ChannelID, &msgsend)
 	return nil
 }
 
@@ -106,19 +102,28 @@ func loadSound(soundFile string) error {
 // playSound plays the current buffer to the provided channel.
 // from https://github.com/bwmarrin/discordgo/blob/master/examples/airhorn/main.go
 func playSound(s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
-	// c, err := s.State.Channel(m.ChannelID)
-	// if err != nil {
-	// 	return errors.New("Could not find channel")
-	// }
+	c, err := s.State.Channel(m.ChannelID)
+	if err != nil {
+		return errors.New("Could not find channel")
+	}
 
-	// g, err := s.State.Guild(c.GuildID)
-	// if err != nil {
-	// 	return errors.New("Could not find guild")
-	// }
-	fmt.Println("Guild ID: " + m.GuildID + "\nChannel ID: " + m.ChannelID)
+	g, err := s.State.Guild(c.GuildID)
+	if err != nil {
+		return errors.New("Could not find guild")
+	}
+
+	var voiceChan string
+	for _, vs := range g.VoiceStates {
+		if vs.UserID == m.Author.ID {
+			voiceChan = vs.ChannelID
+		}
+	}
+	if len(voiceChan) == 0 {
+		return errors.New("You must be in a voice channel to call this command")
+	}
 
 	// Join the provided voice channel.
-	vc, err := s.ChannelVoiceJoin(m.GuildID, m.ChannelID, false, false)
+	vc, err := s.ChannelVoiceJoin(m.GuildID, voiceChan, false, false)
 	if err != nil {
 		return err
 	}

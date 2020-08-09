@@ -7,7 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
+//	"time"
 
 	"github.com/BrianCarducci/DiscordBot/constants"
 
@@ -122,14 +122,49 @@ func playSound(s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
 		return errors.New("You must be in a voice channel to call this command")
 	}
 
+	// If bot is already in the channel, don't do anything
+	for _, vs := range g.VoiceStates {
+		if vs.UserID == s.State.User.ID {
+			return nil
+		}
+	}
+
 	// Join the provided voice channel.
 	vc, err := s.ChannelVoiceJoin(m.GuildID, voiceChan, false, false)
 	if err != nil {
 		return err
 	}
 
+	// The thought here was to wait until 5 seconds elapsed and if bot was still in the channel, exit.
+	// Doesn't seem to be working though
+	//
+	// t0 := time.Now()
+	// inChannel := false
+	// for !inChannel && time.Since(t0).Seconds() < 5 {
+	// 	if time.Since(t0).Seconds() > 5 {
+	// 		return errors.New("Timed out bruh")
+	// 	}
+	// 	for _, vs := range g.VoiceStates {
+	// 		if vs.UserID == s.State.User.ID {
+	// 			inChannel = true
+	// 			continue
+	// 		}
+	// 	}
+	// }
+
+	defer func() {
+		// Stop speaking
+		vc.Speaking(false)
+
+		// Sleep for a specified amount of time before ending.
+		// time.Sleep(32 * time.Millisecond)
+
+		// Disconnect from the provided voice channel.
+		vc.Disconnect()
+	}()
+
 	// Sleep for a specified amount of time before playing the sound
-	time.Sleep(250 * time.Millisecond)
+	// time.Sleep(32 * time.Millisecond)
 
 	// Start speaking.
 	vc.Speaking(true)
@@ -138,15 +173,6 @@ func playSound(s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
 	for _, buff := range buffer {
 		vc.OpusSend <- buff
 	}
-
-	// Stop speaking
-	vc.Speaking(false)
-
-	// Sleep for a specificed amount of time before ending.
-	time.Sleep(250 * time.Millisecond)
-
-	// Disconnect from the provided voice channel.
-	vc.Disconnect()
 
 	return nil
 }

@@ -1,18 +1,22 @@
 version: 0.0
 os: linux
 files:
-  - source: ./
+  - source: /
     destination: /home/ubuntu
 hooks:
   ApplicationStop:
-    - location: ./deploy-scripts/application-stop.sh
+    - location: deploy-scripts/application-stop.sh
       timeout: 900
+      runas: root
   BeforeInstall:
-    - location: ./deploy-scripts/before-install.sh
+    - location: deploy-scripts/before-install.sh
       timeout: 900
+      runas: root
   AfterInstall:
-    - location: ./deploy-scripts/after-install.sh
+    - location: deploy-scripts/after-install.sh
       timeout: 900
+      runas: root
   ApplicationStart:
-    - location: ./deploy-scripts/application-start.sh
+    - location: deploy-scripts/application-start.sh
       timeout: 900
+      runas: root

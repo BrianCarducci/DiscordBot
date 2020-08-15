@@ -1,6 +1,6 @@
 #!/bin/bash
 
-export BOT_FOLDER=/home/ubuntu/DiscordBot
-cd $BOT_FOLDER
+export BOT_DIR=/home/ubuntu/DiscordBot
+cd $BOT_DIR
 
 ./main > bot.log &

@@ -1,15 +1,18 @@
 #!/bin/bash
 
-# kill running bot
-kill -9 $(ps -ax | grep "./main" | head -n 1 | awk '{ print $1 }') && echo "Kill succeeded!" > application-stop.log || echo "Kill FAILED!" > application-stop.log 
-
 export BOT_DIR=/home/ubuntu/DiscordBot
+export LOGS_DIR=$BOT_DIR/logs
 
-# rm directory if it exists
+# rm DiscordBot directory contents if they exist
 if [ -d $BOT_DIR ]
 then
- rm -rf $BOT_DIR/* && echo "Removed everything in pre-existing DiscordBot dir ($BOT_DIR)" >> application-stop.log || echo "Could not remove files in DiscordBot dir" > before-install.log
+ rm -rf $BOT_DIR/*
 else
- echo "$BOT_DIR did not exist. Creating it..." >> application-stop.log
  mkdir -p $BOT_DIR
 fi
+
+# create logs directory
+mkdir -p $BOT_DIR
+
+# kill running bot
+kill -9 $(ps -ax | grep "./main" | head -n 1 | awk '{ print $1 }') && echo "Kill succeeded!" >> $LOGS_DIR/application-stop.log 2>&1 || echo "Kill FAILED!" >> $LOGS_DIR/application-stop.log 2>&1 

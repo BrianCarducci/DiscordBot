@@ -2,14 +2,10 @@ version: 0.0
 os: linux
 files:
   - source: /
-    destination: /home/ubuntu
+    destination: /home/ubuntu/DiscordBot
 hooks:
   ApplicationStop:
     - location: deploy-scripts/application-stop.sh
-      timeout: 900
-      runas: root
-  BeforeInstall:
-    - location: deploy-scripts/before-install.sh
       timeout: 900
       runas: root
   AfterInstall:

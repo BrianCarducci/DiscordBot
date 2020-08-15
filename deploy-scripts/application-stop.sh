@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 export BOT_DIR=/home/ubuntu/DiscordBot
 export LOGS_DIR=$BOT_DIR/logs
 

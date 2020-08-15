@@ -12,7 +12,7 @@ else
 fi
 
 # create logs directory
-mkdir -p $BOT_DIR
+mkdir -p $LOGS_DIR
 
 # kill running bot
 kill -9 $(ps -ax | grep "./main" | head -n 1 | awk '{ print $1 }') && echo "Kill succeeded!" >> $LOGS_DIR/application-stop.log 2>&1 || echo "Kill FAILED!" >> $LOGS_DIR/application-stop.log 2>&1 

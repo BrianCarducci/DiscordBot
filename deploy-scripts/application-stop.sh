@@ -19,7 +19,7 @@ export LOGS_DIR=$BOT_DIR/logs
 
   # kill running bot
   PROCS=$(ps -ax | grep './main' | grep -v 'grep' | awk '{ print $1 }')
-  if [ -z $PROCS ]
+  if [ -z "$PROCS" ]
   then
     echo "No running DiscordBots."
   else

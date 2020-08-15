@@ -15,4 +15,12 @@ fi
 mkdir -p $LOGS_DIR
 
 # kill running bot
-kill -9 $(ps -ax | grep "./main" | head -n 1 | awk '{ print $1 }') && echo "Kill succeeded!" >> $LOGS_DIR/application-stop.log 2>&1 || echo "Kill FAILED!" >> $LOGS_DIR/application-stop.log 2>&1 
+PROCS="$(ps -ax | grep './main' | grep -v 'grep' | awk '{ print $1 }')"
+if [ "$PROCS" | wc -l) -eq 0 ]
+then
+  echo "No running DiscordBots." >> $LOGS_DIR/application-stop.log 2>&1
+else
+  echo "Killing the following processes:" >> $LOGS_DIR/application-stop.log
+  ps -p $PROCS >> $LOGS_DIR/application-stop.log 2>&1 
+  kill -9 $PROCS && echo "Kill succeeded!" >> $LOGS_DIR/application-stop.log 2>&1 || echo "Kill FAILED!" >> $LOGS_DIR/application-stop.log 2>&1 
+fi

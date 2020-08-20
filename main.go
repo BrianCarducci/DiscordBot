@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"os"
 	"os/signal"
@@ -15,41 +18,120 @@ import (
 	"github.com/BrianCarducci/DiscordBot/utils"
 
 	"github.com/bwmarrin/discordgo"
+
+	"github.com/aws/aws-sdk-go/service/secretsmanager"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
 )
 
 func main() {
 	setupBot()
 }
 
-func getArgs(envNames []string) ([]string) {
-	tokenVals := []string{}
-	for _, v := range(envNames) {
-		val := strings.TrimSpace(os.Getenv(v))
-		tokenVals = append(tokenVals, val)
+func getAWSSecrets(secretKeys []string) (map[string]string, error) {
+	secretName := "JeffBot"
+	region := "us-east-1"
+
+	//Create a Secrets Manager client
+	svc := secretsmanager.New(session.New(),
+                                  aws.NewConfig().WithRegion(region))
+	input := &secretsmanager.GetSecretValueInput{
+		SecretId:     aws.String(secretName),
+		VersionStage: aws.String("AWSCURRENT"), // VersionStage defaults to AWSCURRENT if unspecified
 	}
-	return tokenVals
+
+	// In this sample we only handle the specific exceptions for the 'GetSecretValue' API.
+	// See https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
+
+	result, err := svc.GetSecretValue(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+				case secretsmanager.ErrCodeDecryptionFailure:
+				// Secrets Manager can't decrypt the protected secret text using the provided KMS key.
+				fmt.Println(secretsmanager.ErrCodeDecryptionFailure, aerr.Error())
+
+				case secretsmanager.ErrCodeInternalServiceError:
+				// An error occurred on the server side.
+				fmt.Println(secretsmanager.ErrCodeInternalServiceError, aerr.Error())
+
+				case secretsmanager.ErrCodeInvalidParameterException:
+				// You provided an invalid value for a parameter.
+				fmt.Println(secretsmanager.ErrCodeInvalidParameterException, aerr.Error())
+
+				case secretsmanager.ErrCodeInvalidRequestException:
+				// You provided a parameter value that is not valid for the current state of the resource.
+				fmt.Println(secretsmanager.ErrCodeInvalidRequestException, aerr.Error())
+
+				case secretsmanager.ErrCodeResourceNotFoundException:
+				// We can't find the resource that you asked for.
+				fmt.Println(secretsmanager.ErrCodeResourceNotFoundException, aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+	}
+
+	var secretStringifiedMap string
+	if result.SecretString != nil {
+		secretStringifiedMap = *result.SecretString
+	} else {
+		return nil, errors.New("The secret value is nil")
+	}
+	
+	secretMap := map[string]string{}
+	if err := json.Unmarshal([]byte(secretStringifiedMap), &secretMap); err != nil {
+		return nil, err
+	}
+
+	for _, secKey := range(secretKeys) {
+		_, ok := secretMap[secKey]
+		if !ok {
+			// TODO: Maybe loop through them all and return an error with all that don't exist, but the first is fine for now.
+			return nil, errors.New("Secret " + secKey + " does not exist in Secrets Manager.")
+		}
+	}
+
+	return secretMap, nil
+}
+
+func getAPITokens(secretNames []string, isLocal *bool) (map[string]string, error) {
+	if *isLocal {
+		tokenVals := map[string]string{}
+		for _, secName := range(secretNames) {
+			secVal := strings.TrimSpace(os.Getenv(secName))
+			if len(secVal) == 0 {
+				return nil, errors.New("Token " + secName + " is not set as an environment variable.")
+			}
+			tokenVals[secName] = secVal
+		}
+		return tokenVals, nil
+	}
+
+	return getAWSSecrets(secretNames)
 }
 
 func setupBot() {
+	// We can keep this here in case we want to add any other flags in the future
+	isLocalPtr := flag.Bool("local", false, "If set, the bot will be run locally (using environment variables). Else, it will use AWS Secrets Manager")
+	flag.Parse()
+
 	// Ideally make a map or something for a token's env variable name and value..
 	envNames := []string{"DISCORD_TOKEN", "GOOGLE_TOKEN"}
-	apiTokens := getArgs(envNames)
-	discordToken, gMapsToken := apiTokens[0], apiTokens[1]
-	commands.GeoLocator.Token = gMapsToken
-
-	//Exit if one of the needed tokens aren't set
-	shouldExit := false
-	for i,v := range(apiTokens) {
-		if len(v) == 0 {
-			fmt.Println(envNames[i] + " environment variable is not set.")
-			shouldExit = true
-		}
-	}
-	if shouldExit {
+	apiTokens, err := getAPITokens(envNames, isLocalPtr)
+	if err != nil {
+		fmt.Println(err.Error())
 		os.Exit(1)
 	}
+	commands.GeoLocator.Token = apiTokens["GOOGLE_TOKEN"]
 
-	discord, err := discordgo.New("Bot " + discordToken)
+	discord, err := discordgo.New("Bot " + apiTokens["DISCORD_TOKEN"])
+
+	// Remove the tokens from memory as soon as possible. Not sure if this helps but we'll do it for now I suppose.
+	// apiTokens = nil
 	if err != nil {
 		fmt.Println("Could not instantiate bot. Error: " + err.Error())
 		discord.Close()

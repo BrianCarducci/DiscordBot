@@ -23,7 +23,7 @@ mkdir -p $LOGS_DIR
   then
     echo "No running DiscordBots."
   else
-    echo "Killing the following running DiscordBot processes: $PROCS"
+    echo "Killing the following processes:"
     ps -p $PROCS
     kill -9 $PROCS
   fi

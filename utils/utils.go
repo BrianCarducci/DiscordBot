@@ -52,10 +52,6 @@ func tokenize(msg string) ([]string, error) {
 		return []string{}, err
 	}
 
-	if tokens[0] != constants.InvokeStr {
-		return []string{}, bot_error.New("", 0)
-	}
-
 	if len(tokens) == 1 {
 		return []string{}, errors.New("Error: you must call a subcommand.\n" + helpStr)
 	}
@@ -64,7 +60,7 @@ func tokenize(msg string) ([]string, error) {
 }
 
 func RunCommand(s *discordgo.Session, msg *discordgo.MessageCreate) (error) {
-	if strings.HasPrefix(msg.Content, "!" + constants.BotName + " ") {
+	if strings.HasPrefix(msg.Content, constants.InvokeStr + " ") {
 		tokens, err := tokenize(msg.Content)
 		if err != nil {
 			return err

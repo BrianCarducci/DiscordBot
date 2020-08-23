@@ -53,7 +53,7 @@ func tokenize(msg string) ([]string, error) {
 	}
 
 	if tokens[0] != constants.InvokeStr {
-		return []string{}, &bot_error.BotError{Message: "", Code: 0}
+		return []string{}, bot_error.New("", 0)
 	}
 
 	if len(tokens) == 1 {
@@ -64,15 +64,18 @@ func tokenize(msg string) ([]string, error) {
 }
 
 func RunCommand(s *discordgo.Session, msg *discordgo.MessageCreate) (error) {
-	tokens, err := tokenize(msg.Content)
-	if err != nil {
-		return err
-	}
+	if strings.HasPrefix(msg.Content, "!" + constants.BotName + " ") {
+		tokens, err := tokenize(msg.Content)
+		if err != nil {
+			return err
+		}
 
-	commandStr := tokens[0]
-	command, ok := commands.Commands[commandStr]
-	if !ok {
-		return errors.New("ERROR: " + commandStr + " is not a valid command.\n" + helpStr)
+		commandStr := tokens[0]
+		command, ok := commands.Commands[commandStr]
+		if !ok {
+			return errors.New("ERROR: " + commandStr + " is not a valid command.\n" + helpStr)
+		}
+		return command(s, msg, tokens[1:])
 	}
-  return command(s, msg, tokens[1:])
+	return bot_error.New("", 0)
 }

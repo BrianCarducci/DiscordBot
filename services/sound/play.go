@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-//	"time"
+
+	//	"time"
 
 	"github.com/BrianCarducci/DiscordBot/constants"
 
@@ -17,12 +17,12 @@ import (
 var workingDir, _ = os.Getwd()
 var soundsDir = filepath.Join(workingDir, "assets", "sounds")
 var sounds = map[string]string{
-	"name": filepath.Join(soundsDir, "name_jeff.dca"),
+	"name": filepath.Join(soundsDir, "crerb.pcm"),
 }
 var helpString = help()
 
 var curSound = ""
-var buffer [][]byte 
+var buffer []byte 
 
 // Play plays a sound specified by args[0]
 func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (error) {
@@ -56,47 +56,61 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 // loadSound attempts to load an encoded sound file from disk
 // from https://github.com/bwmarrin/discordgo/blob/master/examples/airhorn/main.go
 func loadSound(soundFile string) error {
-	file, err := os.Open(soundFile)
+
+	fileDetails, err := os.Stat(filepath.Join(soundsDir, "crerb.pcm"))
 	if err != nil {
-		fmt.Println("Error opening dca file :", err)
+		fmt.Println("Error opening pcm file :", err)
+		return err
+	}
+	fileSize := fileDetails.Size()
+
+	buffer = make([]byte, fileSize)
+
+	file, err := os.Open(filepath.Join(soundsDir, "crerb.pcm"))
+	if err != nil {
+		fmt.Println("Error opening pcm file :", err)
 		return err
 	}
 
-	buffer = make([][]byte, 0)
-
-	var opuslen int16
-
-	for {
-		// Read opus frame length from dca file.
-		err = binary.Read(file, binary.LittleEndian, &opuslen)
-
-		// If this is the end of the file, just return.
-		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			err := file.Close()
-			if err != nil {
-				return err
-			}
-			return nil
-		}
-
-		if err != nil {
-			fmt.Println("Error reading from dca file :", err)
-			return err
-		}
-
-		// Read encoded pcm from dca file.
-		InBuf := make([]byte, opuslen)
-		err = binary.Read(file, binary.LittleEndian, &InBuf)
-
-		// Should not be any end of file errors
-		if err != nil {
-			fmt.Println("Error reading from dca file :", err)
-			return err
-		}
-
-		// Append encoded pcm data to the buffer.
-		buffer = append(buffer, InBuf)
+	err = binary.Read(file, binary.LittleEndian, &buffer)
+	if err != nil {
+		fmt.Println("Error reading pcm file :", err)
+		return err
 	}
+
+	return nil
+
+	// for {
+	// 	// Read opus frame length from dca file.
+	// 	err = binary.Read(file, binary.LittleEndian, &opuslen)
+
+	// 	// If this is the end of the file, just return.
+	// 	if err == io.EOF || err == io.ErrUnexpectedEOF {
+	// 		err := file.Close()
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 		return nil
+	// 	}
+
+	// 	if err != nil {
+	// 		fmt.Println("Error reading from dca file :", err)
+	// 		return err
+	// 	}
+
+	// 	// Read encoded pcm from dca file.
+	// 	InBuf := make([]byte, opuslen)
+	// 	err = binary.Read(file, binary.LittleEndian, &InBuf)
+
+	// 	// Should not be any end of file errors
+	// 	if err != nil {
+	// 		fmt.Println("Error reading from dca file :", err)
+	// 		return err
+	// 	}
+
+	// 	// Append encoded pcm data to the buffer.
+	// 	buffer = append(buffer, InBuf)
+	// }
 }
 
 // playSound plays the current buffer to the provided channel.
@@ -170,9 +184,8 @@ func playSound(s *discordgo.Session, m *discordgo.MessageCreate) (err error) {
 	vc.Speaking(true)
 
 	// Send the buffer data.
-	for _, buff := range buffer {
-		vc.OpusSend <- buff
-	}
+	vc.OpusSend <- buffer
+	
 
 	return nil
 }

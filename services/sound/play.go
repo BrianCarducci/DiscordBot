@@ -22,7 +22,7 @@ var sounds = map[string]string{
 var helpString = help()
 
 var curSound = ""
-var buffer []byte 
+var buffer []byte
 
 // Play plays a sound specified by args[0]
 func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (error) {

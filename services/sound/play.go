@@ -22,7 +22,7 @@ var (
 	workingDir, _ = os.Getwd()
 	soundsDir = filepath.Join(workingDir, "assets", "sounds")
 	sounds = map[string]string{
-		"name": filepath.Join(soundsDir, "crerb.pcm"),
+		"name": filepath.Join(soundsDir, "crerb2.pcm"),
 	}
 	helpString = help()
 
@@ -41,7 +41,7 @@ var (
 	// AudioFrameRate sets the opus encoder Frame Rate value.
 	// Must be one of 8000, 12000, 16000, 24000, or 48000.
 	// Discord only uses 48000 currently.
-	AudioFrameRate = 16000
+	AudioFrameRate = 48000
 
 	// AudioBitrate sets the opus encoder bitrate (quality) value.
 	// Must be within 500 to 512000 bits per second are meaningful.
@@ -93,6 +93,8 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 
 	EncodeChan = make(chan []int16, 10)
 	OutputChan = make(chan []byte, 10)
+
+	OpusEncoder.SetBitrate(AudioBitrate)
 
 	WaitGroup.Add(1)
 	go loadSound(soundFile)

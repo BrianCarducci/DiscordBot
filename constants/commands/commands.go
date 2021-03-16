@@ -17,4 +17,5 @@ var Commands = map[string]func(*discordgo.Session, *discordgo.MessageCreate, []s
 	"odds": odds.PlayOdds,
 	"m8b": m8b.M8b,
 	"play": sound.Play,
+	"tts": sound.Play,
 }

@@ -71,6 +71,9 @@ func RunCommand(s *discordgo.Session, msg *discordgo.MessageCreate) (error) {
 		if !ok {
 			return errors.New("ERROR: " + commandStr + " is not a valid command.\n" + helpStr)
 		}
+		if commandStr == "play" || commandStr == "tts"{
+			return command(s, msg, tokens)
+		} 
 		return command(s, msg, tokens[1:])
 	}
 	return bot_error.New("", 0)

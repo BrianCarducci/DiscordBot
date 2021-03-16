@@ -10,9 +10,11 @@ import (
 	"path/filepath"
 	"sync"
 
-	//	"time"
-
 	"github.com/BrianCarducci/DiscordBot/constants"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/polly"
 
 	"github.com/bwmarrin/discordgo"
 	"layeh.com/gopus"
@@ -25,8 +27,6 @@ var (
 		"name": filepath.Join(soundsDir, "crerb2.pcm"),
 	}
 	helpString = help()
-
-	curSound = ""
 )
 
 
@@ -83,24 +83,40 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 		return errors.New(helpString)
 	}
 
-	reqSound := args[0]
-	soundFile, ok := sounds[reqSound]
-	if !ok {
-		return errors.New("Invalid sound. " + helpString)
+	var reader io.Reader
+
+	if args[0] == "play" {
+		reqSound := args[1]
+		soundFilePath, ok := sounds[reqSound]
+		if !ok {
+			return errors.New("Invalid sound. " + helpString)
+		}
+		file, err := os.Open(soundFilePath)
+		if err != nil {
+			fmt.Println("Error opening file :", err)
+			return err
+		}
+		reader = io.Reader(file)
+		defer file.Close()
+	} else {
+		var err error
+		reader, err = pollyGetAudioStream(args[1])
+		if err != nil {
+			return err
+		}
 	}
 
-	curSound = reqSound
-
+	
 	EncodeChan = make(chan []int16, 10)
 	OutputChan = make(chan []byte, 10)
 
 	OpusEncoder.SetBitrate(AudioBitrate)
 
 	WaitGroup.Add(1)
-	go loadSound(soundFile)
+	go loadSound(reader)
 
 	WaitGroup.Add(1)
-	go encodeSound()
+	go opusEncodeSound()
 
 	WaitGroup.Add(1)
 	go playSound(s, m)
@@ -111,28 +127,48 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 	return nil
 }
 
+// TODO: Refactor session creation so it is only created once
+func pollyGetAudioStream(message string) (io.Reader, error) {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))		// Create Polly client
+	svc := polly.New(sess)
+
+	// Output to MP3 using voice Joanna
+	input := &polly.SynthesizeSpeechInput{
+		OutputFormat: aws.String("pcm"), 
+		Text: aws.String(message), 
+		VoiceId: aws.String("Brian"),
+		SampleRate: aws.String("16000"),
+	}
+
+	output, err := svc.SynthesizeSpeech(input)
+	if err != nil {
+		fmt.Println("Got error calling SynthesizeSpeech:")
+		return nil, err
+	}
+	return output.AudioStream, nil
+}
+
+
 // loadSound attempts to load an encoded sound file from disk
 // from https://github.com/bwmarrin/discordgo/blob/master/examples/airhorn/main.go
-func loadSound(soundFile string) {
-	file, err := os.Open(sounds["name"])
-	if err != nil {
-		fmt.Println("Error opening pcm file :", err)
-	}
+func loadSound(reader io.Reader) {
 
 	defer func() {
 		close(EncodeChan)
 		WaitGroup.Done()
-		file.Close()
+		// file.Close()
 	}()
 
 	// Create a 16KB input buffer
-	fileBuf := bufio.NewReaderSize(file, 16384)
+	fileBuf := bufio.NewReaderSize(reader, 16384)
 
 	// Loop over the file and pass the data to the encoder.
 	for {
 		buf := make([]int16, AudioFrameSize*AudioChannels)
 
-		err = binary.Read(fileBuf, binary.LittleEndian, &buf)
+		err := binary.Read(fileBuf, binary.LittleEndian, &buf)
 		if err == io.EOF {
 			// Okay! There's nothing left, time to quit.
 			return
@@ -155,7 +191,7 @@ func loadSound(soundFile string) {
 	}
 }
 
-func encodeSound() {
+func opusEncodeSound() {
 // encodeSound listens on the EncodeChan and encodes provided PCM16 data
 // to opus, then sends the encoded data to the OutputChan
 

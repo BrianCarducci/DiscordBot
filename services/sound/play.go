@@ -134,12 +134,12 @@ func pollyGetAudioStream(message string) (io.Reader, error) {
 	}))		// Create Polly client
 	svc := polly.New(sess)
 
-	// Output to MP3 using voice Joanna
+	// Output to PCM using voice Brian
 	input := &polly.SynthesizeSpeechInput{
 		OutputFormat: aws.String("pcm"),
 		Text: aws.String(message),
 		VoiceId: aws.String("Brian"),
-		SampleRate: aws.String("16000"),
+		SampleRate: aws.String(constants.PollyAudioSampleRate),
 	}
 
 	output, err := svc.SynthesizeSpeech(input)

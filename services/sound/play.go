@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 
@@ -83,7 +84,10 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 		return errors.New(helpString)
 	}
 
-	var reader io.Reader
+	EncodeChan = make(chan []int16, 10)
+	OutputChan = make(chan []byte, 10)
+
+	OpusEncoder.SetBitrate(AudioBitrate)
 
 	if args[0] == "play" {
 		reqSound := args[1]
@@ -96,24 +100,18 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 			fmt.Println("Error opening file :", err)
 			return err
 		}
-		reader = io.Reader(file)
-		defer file.Close()
+
+		WaitGroup.Add(1)
+		go loadSound(file)
 	} else {
-		var err error
-		reader, err = pollyGetAudioStream(args[1])
+		pollyAudioStream, err := pollyGetAudioStream(args[1])
 		if err != nil {
 			return err
 		}
+
+		WaitGroup.Add(1)
+		go convertSampleRate(pollyAudioStream)
 	}
-
-
-	EncodeChan = make(chan []int16, 10)
-	OutputChan = make(chan []byte, 10)
-
-	OpusEncoder.SetBitrate(AudioBitrate)
-
-	WaitGroup.Add(1)
-	go loadSound(reader)
 
 	WaitGroup.Add(1)
 	go opusEncodeSound()
@@ -128,7 +126,7 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 }
 
 // TODO: Refactor session creation so it is only created once
-func pollyGetAudioStream(message string) (io.Reader, error) {
+func pollyGetAudioStream(message string) (io.ReadCloser, error) {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))		// Create Polly client
@@ -153,12 +151,11 @@ func pollyGetAudioStream(message string) (io.Reader, error) {
 
 // loadSound attempts to load an encoded sound file from disk
 // from https://github.com/bwmarrin/discordgo/blob/master/examples/airhorn/main.go
-func loadSound(reader io.Reader) {
-
+func loadSound(reader io.ReadCloser) {
 	defer func() {
 		close(EncodeChan)
 		WaitGroup.Done()
-		// file.Close()
+		reader.Close()
 	}()
 
 	// Create a 16KB input buffer
@@ -188,6 +185,42 @@ func loadSound(reader io.Reader) {
 
 		// write pcm data to the EncodeChan
 		EncodeChan <- buf
+	}
+}
+
+func convertSampleRate(pollyAudioStream io.ReadCloser) {
+	// convert sample rate from Polly to 48KHz using ffmpeg subprocess
+	cmd := exec.Command("ffmpeg",
+	"-ac", "1",
+	"-f", "s16le",
+	"-ar", constants.PollyAudioSampleRate,
+	"-i", "pipe:",
+	"-f", "s16le",
+	"-ar", string(AudioFrameRate),
+	"-ac", "1",
+	"pipe:")
+
+	cmd.Stdin = pollyAudioStream
+
+	ffmpegStdout, err := cmd.StdoutPipe()
+	if err != nil {
+		fmt.Println("Error assigning ffmpeg stdout pipe:", err)
+		return
+	}
+
+	defer func() {
+		pollyAudioStream.Close()
+		WaitGroup.Done()
+		// file.Close()
+	}()
+
+	WaitGroup.Add(1)
+	go loadSound(ffmpegStdout)
+
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("Error running ffmpeg subprocess:", err)
+		return
 	}
 }
 

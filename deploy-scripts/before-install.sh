@@ -4,9 +4,12 @@ export BOT_DIR=/home/ubuntu/DiscordBot
 export LOGS_DIR=$BOT_DIR/logs
 
 # Install necessary apt utilities
+echo "Installing apt packages"
 grep -vE '^#' $BOT_DIR/deploy-scripts/apt-utils.txt | xargs sudo apt-get -y install >> $LOGS_DIR/before-install.log 2>&1
 
 # Install necessary snap utilities
+printf "\nInstalling snap packages\n"
 while IFS= read -r line; do
-	sudo snap install "$line" >> $LOGS_DIR/before-install.log 2>&1
-done < <(grep -vE '^#' $BOT_DIR/deploy-scripts/snap-utils.txt)
+	echo "Attempting to install $line"
+	sudo snap install "$line"
+done < <(grep -vE '^#' $BOT_DIR/deploy-scripts/snap-utils.txt) >> $LOGS_DIR/before-install.log 2>&1

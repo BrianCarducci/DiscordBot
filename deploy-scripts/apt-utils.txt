@@ -1,0 +1,2 @@
+# Install gcc for gopus library
+build-essential

@@ -1,0 +1,3 @@
+#--channel=latest/stable go
+# Install ffmpeg to convert Polly audio sample rate to 48KHz
+ffmpeg

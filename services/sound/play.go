@@ -106,7 +106,7 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 		}
 	}
 
-	
+
 	EncodeChan = make(chan []int16, 10)
 	OutputChan = make(chan []byte, 10)
 
@@ -136,8 +136,8 @@ func pollyGetAudioStream(message string) (io.Reader, error) {
 
 	// Output to MP3 using voice Joanna
 	input := &polly.SynthesizeSpeechInput{
-		OutputFormat: aws.String("pcm"), 
-		Text: aws.String(message), 
+		OutputFormat: aws.String("pcm"),
+		Text: aws.String(message),
 		VoiceId: aws.String("Brian"),
 		SampleRate: aws.String("16000"),
 	}

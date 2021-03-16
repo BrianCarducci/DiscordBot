@@ -15,8 +15,8 @@ hooks:
   AfterInstall:
     - location: deploy-scripts/after-install.sh
       timeout: 900
-      runas: ubuntu
+      runas: root
   ApplicationStart:
     - location: deploy-scripts/application-start.sh
       timeout: 900
-      runas: root
+      runas: ubuntu

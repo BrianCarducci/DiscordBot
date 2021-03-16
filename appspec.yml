@@ -8,6 +8,10 @@ hooks:
     - location: deploy-scripts/application-stop.sh
       timeout: 900
       runas: root
+  BeforeInstall:
+    - location: deploy-scripts/before-install.sh
+      timeout: 900
+      runas: root
   AfterInstall:
     - location: deploy-scripts/after-install.sh
       timeout: 900

@@ -7,11 +7,11 @@ hooks:
   ApplicationStop:
     - location: deploy-scripts/application-stop.sh
       timeout: 900
-      runas: ubuntu
+      runas: root
   AfterInstall:
     - location: deploy-scripts/after-install.sh
       timeout: 900
-      runas: ubuntu
+      runas: root
   ApplicationStart:
     - location: deploy-scripts/application-start.sh
       timeout: 900

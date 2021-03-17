@@ -108,7 +108,7 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 		}
 
 		WaitGroup.Add(1)
-		go loadSound(file)
+		go loadSound(file, nil)
 	} else {
 		pollyAudioStream, err := pollyGetAudioStream(args[1])
 		if err != nil {
@@ -150,11 +150,14 @@ func pollyGetAudioStream(message string) (io.ReadCloser, error) {
 
 // loadSound attempts to load an encoded sound file from disk
 // from https://github.com/bwmarrin/discordgo/blob/master/examples/airhorn/main.go
-func loadSound(reader io.ReadCloser) {
+func loadSound(reader io.ReadCloser, cmd *exec.Cmd) {
 	defer func() {
 		close(EncodeChan)
-		WaitGroup.Done()
+		if cmd != nil {
+			cmd.Wait()
+		}
 		reader.Close()
+		WaitGroup.Done()
 	}()
 
 	// Create a 16KB input buffer
@@ -214,7 +217,7 @@ func convertSampleRate(pollyAudioStream io.ReadCloser) {
 	}
 
 	WaitGroup.Add(1)
-	go loadSound(ffmpegStdout)
+	go loadSound(ffmpegStdout, cmd)
 }
 
 func opusEncodeSound() {

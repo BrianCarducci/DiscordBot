@@ -89,12 +89,6 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 
 	OpusEncoder.SetBitrate(AudioBitrate)
 
-	WaitGroup.Add(1)
-	go opusEncodeSound()
-
-	WaitGroup.Add(1)
-	go playSound(s, m)
-
 	if args[0] == "play" {
 		reqSound := args[1]
 		soundFilePath, ok := sounds[reqSound]
@@ -115,8 +109,15 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 			return err
 		}
 
-		convertSampleRate(pollyAudioStream)
+		WaitGroup.Add(1)
+		go convertSampleRate(pollyAudioStream)
 	}
+
+	WaitGroup.Add(1)
+	go opusEncodeSound()
+
+	WaitGroup.Add(1)
+	go playSound(s, m)
 
 	// wait for above goroutines to finish
 	WaitGroup.Wait()
@@ -207,14 +208,20 @@ func convertSampleRate(pollyAudioStream io.ReadCloser) {
 		return
 	}
 
-	err = cmd.Start()
-	if err != nil {
-		fmt.Println("Error starting ffmpeg subprocess:", err)
-		return
-	}
+	defer func() {
+		pollyAudioStream.Close()
+		WaitGroup.Done()
+		// file.Close()
+	}()
 
 	WaitGroup.Add(1)
 	go loadSound(ffmpegStdout)
+
+	err = cmd.Run()
+	if err != nil {
+		fmt.Println("Error running ffmpeg subprocess:", err)
+		return
+	}
 }
 
 func opusEncodeSound() {

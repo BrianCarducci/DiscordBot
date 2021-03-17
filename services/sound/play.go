@@ -155,9 +155,10 @@ func loadSound(reader io.ReadCloser, cmd *exec.Cmd) {
 		close(EncodeChan)
 		if cmd != nil {
 			cmd.Wait()
+		} else {
+			WaitGroup.Done()
 		}
 		reader.Close()
-		WaitGroup.Done()
 	}()
 
 	// Create a 16KB input buffer
@@ -217,8 +218,7 @@ func convertSampleRate(pollyAudioStream io.ReadCloser) {
 		return
 	}
 
-	WaitGroup.Add(1)
-	go loadSound(ffmpegStdout, cmd)
+	loadSound(ffmpegStdout, cmd)
 }
 
 func opusEncodeSound() {

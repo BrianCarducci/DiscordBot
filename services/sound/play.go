@@ -109,9 +109,6 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 
 		WaitGroup.Add(1)
 		go loadSound(file, nil)
-
-		// wait for above goroutines to finish
-		WaitGroup.Wait()
 	} else {
 		pollyAudioStream, err := pollyGetAudioStream(args[1])
 		if err != nil {
@@ -121,6 +118,8 @@ func Play(s *discordgo.Session, m *discordgo.MessageCreate, args []string) (erro
 		convertSampleRate(pollyAudioStream)
 	}
 
+	// wait for above goroutines to finish
+	WaitGroup.Wait()
 
 	return nil
 }
@@ -220,9 +219,6 @@ func convertSampleRate(pollyAudioStream io.ReadCloser) {
 	}
 
 	loadSound(ffmpegStdout, cmd)
-
-	// wait for above goroutines to finish
-	WaitGroup.Wait()
 }
 
 func opusEncodeSound() {

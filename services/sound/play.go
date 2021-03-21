@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	"github.com/BrianCarducci/DiscordBot/constants"
@@ -200,7 +201,7 @@ func convertSampleRate(pollyAudioStream io.ReadCloser) {
 	"-ar", constants.PollyAudioSampleRate,
 	"-i", "pipe:",
 	"-f", "s16le",
-	"-ar", string(AudioFrameRate),
+	"-ar", strconv.Itoa(AudioFrameRate),
 	"-ac", "1",
 	"pipe:")
 

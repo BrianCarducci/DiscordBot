@@ -169,7 +169,6 @@ func loadSound(reader io.ReadCloser, cmd *exec.Cmd) {
 	for {
 		buf := make([]int16, AudioFrameSize*AudioChannels)
 
-		fmt.Println("Getting data from audio stream")
 		err := binary.Read(fileBuf, binary.LittleEndian, &buf)
 		if err == io.EOF {
 			// Okay! There's nothing left, time to quit.
